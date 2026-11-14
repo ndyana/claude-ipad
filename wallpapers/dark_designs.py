@@ -215,37 +215,37 @@ def gamer_nook(c):
     return grain(img)
 
 
-def pixel(c):
-    """Soft pixel-art night sky with hearts and stars."""
-    n = 96
+def pixel(c, n=None):
+    """Soft pixel-art night sky with hearts and stars. Bigger n = smaller pixels, more zoomed out."""
+    n = n or int(os.environ.get("PIXEL_N", 96))
+    o = (n - 96) // 2  # keep the 96-grid scene centred
     sm = Image.new("RGB", (n, n), c["bg1"])
     d = ImageDraw.Draw(sm)
+    sky = lambda yy: tuple(int(a * (1 - yy / n) + b * yy / n) for a, b in zip(c["bg1"], c["bg2"]))
     for yy in range(n):
-        t = yy / n
-        d.line((0, yy, n, yy), fill=tuple(int(a * (1 - t) + b * t) for a, b in zip(c["bg1"], c["bg2"])))
+        d.line((0, yy, n, yy), fill=sky(yy))
     rng = np.random.default_rng(5)
-    for _ in range(70):
-        d.point((int(rng.integers(0, n)), int(rng.integers(0, n * 0.7))), fill=c["accent"])
+    for _ in range(int(70 * (n / 96) ** 2)):
+        d.point((int(rng.integers(0, n)), int(rng.integers(0, n * 0.75))), fill=c["accent"])
     for sx, sy in [(14, 12), (78, 20), (60, 8), (30, 40), (84, 52)]:
+        sx, sy = sx + o, sy + o
         d.point([(sx, sy), (sx - 1, sy), (sx + 1, sy), (sx, sy - 1), (sx, sy + 1)], fill=c["pink"])
-    d.ellipse((58, 22, 76, 40), fill=c["pink"])
-    for yy in range(19, 38):
-        t = yy / n
-        col = tuple(int(a * (1 - t) + b * t) for a, b in zip(c["bg1"], c["bg2"]))
-        for xx in range(63, 82):
-            if (xx - 72) ** 2 + (yy - 28) ** 2 <= 81:
-                d.point((xx, yy), fill=col)
+    d.ellipse((58 + o, 22 + o, 76 + o, 40 + o), fill=c["pink"])
+    for yy in range(19 + o, 38 + o):
+        for xx in range(63 + o, 82 + o):
+            if (xx - 72 - o) ** 2 + (yy - 28 - o) ** 2 <= 81:
+                d.point((xx, yy), fill=sky(yy))
     heart = ["0110110", "1111111", "1111111", "0111110", "0011100", "0001000"]
     for hx, hy, col in [(18, 62, c["pink"]), (44, 70, c["accent"]), (70, 64, c["pink"])]:
         for j, row in enumerate(heart):
             for i, ch in enumerate(row):
                 if ch == "1":
-                    d.point((hx + i, hy + j), fill=col)
+                    d.point((hx + o + i, hy + o + j), fill=col)
     for i in range(n):
-        h = int(84 + 3 * math.sin(i / 7) + 2 * math.sin(i / 3))
+        h = int(n - 12 + 3 * math.sin(i / 7) + 2 * math.sin(i / 3))
         d.line((i, h, i, n), fill=c["mid"])
     for i in range(n):
-        h = int(90 + 2 * math.sin(i / 5 + 1))
+        h = int(n - 6 + 2 * math.sin(i / 5 + 1))
         d.line((i, h, i, n), fill=c["bg1"])
     img = sm.resize((S, S), Image.NEAREST).convert("RGBA")
     return grain(img, 3)
